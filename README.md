@@ -23,6 +23,24 @@ npm run build
 npm run preview
 ```
 
+## Deploy on Vercel
+
+This app is a static Vite PWA. On [Vercel](https://vercel.com):
+
+1. **Add New Project** → import `inmypurposetech-prog/scheduled-playlist`
+2. Keep the defaults (Framework: Vite, build `npm run build`, output `dist`)
+3. Deploy
+
+After that, every push to `main` publishes a new version automatically.
+
+### Use it on iPhone (you + family)
+
+1. Open the Vercel URL in **Safari**
+2. Tap **Share → Add to Home Screen**
+3. Import your lesson audio in **Library**, then build weekday playlists in **Schedule**
+
+Each person’s audio and playlists stay on their own phone. Nothing is uploaded or shared between devices.
+
 ## Suggested flow
 
 1. Import your downloaded lesson exercises in **Library** (rename / assign lesson labels if you like).
