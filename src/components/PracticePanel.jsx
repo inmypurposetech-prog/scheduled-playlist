@@ -135,7 +135,7 @@ export default function PracticePanel({ day, tracks, onOpenSchedule, onOpenLibra
         </div>
       </div>
 
-      <h3 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Today&apos;s queue</h3>
+      <h3 className="queue-heading">Today&apos;s queue</h3>
       <ul className="queue">
         {tracks.map((track, i) => (
           <li key={track.id}>
