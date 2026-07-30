@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+.env.*
+!.env.example
