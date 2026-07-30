@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function SettingsPanel({
   settings,
@@ -7,6 +7,10 @@ export default function SettingsPanel({
   onTest,
 }) {
   const [draft, setDraft] = useState(settings)
+
+  useEffect(() => {
+    setDraft(settings)
+  }, [settings])
 
   return (
     <section className="panel">
