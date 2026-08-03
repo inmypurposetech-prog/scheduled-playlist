@@ -1,19 +1,27 @@
 import { useMemo, useState } from 'react'
+import { SORT_OPTIONS, sortTracks } from '../lib/sortTracks'
 
 export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
   const [dragOver, setDragOver] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft] = useState({ name: '', lesson: '' })
+  const [sortBy, setSortBy] = useState('lesson-asc')
 
   const groups = useMemo(() => {
-    const map = new Map()
-    for (const track of tracks) {
-      const key = track.lesson || 'Uncategorized'
-      if (!map.has(key)) map.set(key, [])
-      map.get(key).push(track)
+    const sorted = sortTracks(tracks, sortBy)
+
+    if (sortBy.startsWith('lesson')) {
+      const map = new Map()
+      for (const track of sorted) {
+        const key = track.lesson || 'Uncategorized'
+        if (!map.has(key)) map.set(key, [])
+        map.get(key).push(track)
+      }
+      return [...map.entries()]
     }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
-  }, [tracks])
+
+    return [['All tracks', sorted]]
+  }, [tracks, sortBy])
 
   function startEdit(track) {
     setEditingId(track.id)
@@ -38,6 +46,22 @@ export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
             device — nothing is uploaded to a server.
           </p>
         </div>
+        {tracks.length > 0 && (
+          <label className="sort-control">
+            <span>Sort by</span>
+            <select
+              aria-label="Sort library"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <div

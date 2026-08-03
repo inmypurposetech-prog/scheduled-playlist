@@ -44,7 +44,7 @@ Each person’s audio and playlists stay on their own phone. Nothing is uploaded
 ## Suggested flow
 
 1. Import your downloaded lesson exercises in **Library** (rename / assign lesson labels if you like).
-2. In **Schedule**, add tracks to each weekday in the order you want to practice.
+2. In **Schedule**, add tracks to each weekday. Drag the ⋮⋮ handle to reorder, use **Sort by** to order a whole day at once, or keep the ↑↓ buttons for small tweaks.
 3. In **Reminders**, pick a time, allow notifications, and save.
 4. Keep the tab open (or install as a PWA from the browser) so the reminder can fire.
 5. When prompted, choose **Yes, I'm ready** and press Play.
