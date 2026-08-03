@@ -41,6 +41,16 @@ After that, every push to `main` publishes a new version automatically.
 
 Each person’s audio and playlists stay on their own phone. Nothing is uploaded or shared between devices.
 
+### Don’t see a new update after deploy?
+
+This app is a PWA, so Safari / Home Screen can keep an old cached copy. Try:
+
+1. Open the site in **Safari** (not only the Home Screen icon)
+2. Tap **aA → Website Settings → Clear Website Data** (or clear cache for the site)
+3. Reload, wait a few seconds, then reopen the Home Screen app
+
+New versions also check for updates when you return to the tab.
+
 ## Suggested flow
 
 1. Import your downloaded lesson exercises in **Library** (rename / assign lesson labels if you like).
