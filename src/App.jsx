@@ -226,14 +226,15 @@ export default function App() {
         <div className="empty-state">Loading your practice library…</div>
       ) : (
         <>
-          {tab === 'practice' && (
+          {/* Keep the player mounted so audio survives tab switches and lock screen. */}
+          <div hidden={tab !== 'practice'}>
             <PracticePanel
               day={today}
               tracks={todayPlaylist}
               onOpenSchedule={() => setTab('schedule')}
               onOpenLibrary={() => setTab('library')}
             />
-          )}
+          </div>
           {tab === 'library' && (
             <LibraryPanel
               tracks={tracks}
