@@ -260,7 +260,7 @@ export default function PracticePanel({
           </h2>
           <p>
             {isToday
-              ? `Import your lesson audio, then assign exercises to ${day} — or reuse yesterday’s queue.`
+              ? `Import your lesson audio, then assign exercises to ${day} — or reuse yesterday's queue.`
               : `${day} has no exercises assigned. Switch back to today or build this day in Schedule.`}
           </p>
           <div className="transport">
