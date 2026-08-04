@@ -63,7 +63,7 @@ function SortablePlaylistItem({ track, index, onMove, onRemove }) {
   )
 }
 
-export default function SchedulePanel({ tracks, playlists, today, onChange }) {
+export default function SchedulePanel({ tracks, playlists, today, onChange, onCopyPlaylist }) {
   const [selectedDay, setSelectedDay] = useState(today)
   const [librarySort, setLibrarySort] = useState('name-asc')
 
@@ -88,6 +88,17 @@ export default function SchedulePanel({ tracks, playlists, today, onChange }) {
       librarySort,
     )
   }, [tracks, current.trackIds, librarySort])
+
+  const otherDaysWithTracks = useMemo(() => {
+    return DAYS.filter((day) => {
+      if (day === selectedDay) return false
+      const list = playlists.find((p) => p.day === day)
+      return (list?.trackIds || []).length > 0
+    })
+  }, [playlists, selectedDay])
+
+  const selectedHasTracks = (current.trackIds || []).length > 0
+  const canCopyToToday = selectedDay !== today && selectedHasTracks
 
   function addTrack(id) {
     onChange(selectedDay, [...(current.trackIds || []), id])
@@ -136,7 +147,8 @@ export default function SchedulePanel({ tracks, playlists, today, onChange }) {
           <h2>Weekly schedule</h2>
           <p>
             Build a Monday playlist, a Tuesday playlist, and so on — mix exercises from different
-            lessons into each day. Drag tracks to reorder, or sort the whole day at once.
+            lessons into each day. Drag tracks to reorder, sort a whole day, or copy one day into
+            another.
           </p>
         </div>
       </div>
@@ -160,29 +172,68 @@ export default function SchedulePanel({ tracks, playlists, today, onChange }) {
         <div className="schedule-pane">
           <div className="pane-toolbar">
             <h3>{selectedDay} playlist</h3>
-            <label className="sort-control">
-              <span>Sort by</span>
-              <select
-                aria-label={`Sort ${selectedDay} playlist`}
-                defaultValue=""
-                onChange={(e) => {
-                  if (e.target.value) {
-                    sortPlaylist(e.target.value)
-                    e.target.value = ''
-                  }
-                }}
-                disabled={!queued.length}
-              >
-                <option value="" disabled>
-                  Sort playlist…
-                </option>
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+            <div className="pane-toolbar-actions">
+              {canCopyToToday && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onCopyPlaylist(selectedDay, today)}
+                >
+                  Copy to today
+                </button>
+              )}
+              <label className="sort-control">
+                <span>Copy from</span>
+                <select
+                  aria-label={`Copy another day into ${selectedDay}`}
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      onCopyPlaylist(e.target.value, selectedDay)
+                      e.target.value = ''
+                    }
+                  }}
+                  disabled={!otherDaysWithTracks.length}
+                >
+                  <option value="">
+                    {otherDaysWithTracks.length ? 'Choose day…' : 'No other days'}
                   </option>
-                ))}
-              </select>
-            </label>
+                  {otherDaysWithTracks.map((day) => {
+                    const count =
+                      playlists.find((p) => p.day === day)?.trackIds?.length || 0
+                    return (
+                      <option key={day} value={day}>
+                        {day}
+                        {day === today ? ' (today)' : ''} · {count}
+                      </option>
+                    )
+                  })}
+                </select>
+              </label>
+              <label className="sort-control">
+                <span>Sort by</span>
+                <select
+                  aria-label={`Sort ${selectedDay} playlist`}
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      sortPlaylist(e.target.value)
+                      e.target.value = ''
+                    }
+                  }}
+                  disabled={!queued.length}
+                >
+                  <option value="" disabled>
+                    Sort playlist…
+                  </option>
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
           {!queued.length ? (
             <div className="empty-state">No exercises yet. Add tracks from your library.</div>

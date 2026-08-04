@@ -11,6 +11,7 @@ import {
   setSetting,
   todayName,
   updateTrack,
+  yesterdayName,
 } from './lib/db'
 import {
   ensureNotificationPermission,
@@ -47,6 +48,8 @@ export default function App() {
   const [readyOpen, setReadyOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
+  /** Weekday currently loaded in the practice player (defaults to calendar today). */
+  const [practiceDay, setPracticeDay] = useState(() => todayName())
   const objectUrls = useRef(new Map())
   const settingsRef = useRef(settings)
 
@@ -130,12 +133,46 @@ export default function App() {
   }, [tracks])
 
   const today = todayName()
-  const todayPlaylist = useMemo(() => {
-    const list = playlists.find((p) => p.day === today) || { trackIds: [] }
-    return (list.trackIds || [])
-      .map((id) => trackMap[id])
-      .filter(Boolean)
-  }, [playlists, today, trackMap])
+  const yesterday = yesterdayName()
+
+  // If the calendar day rolls over while the tab stays open, follow "today"
+  // when the player was still on the previous calendar day.
+  useEffect(() => {
+    let lastToday = todayName()
+    const syncDay = () => {
+      const nextToday = todayName()
+      if (nextToday === lastToday) return
+      const previousToday = lastToday
+      lastToday = nextToday
+      setPracticeDay((current) => (current === previousToday ? nextToday : current))
+    }
+    const id = window.setInterval(syncDay, 60_000)
+    window.addEventListener('focus', syncDay)
+    return () => {
+      window.clearInterval(id)
+      window.removeEventListener('focus', syncDay)
+    }
+  }, [])
+
+  const resolvePlaylist = useCallback(
+    (day) => {
+      const list = playlists.find((p) => p.day === day) || { trackIds: [] }
+      return (list.trackIds || [])
+        .map((id) => trackMap[id])
+        .filter(Boolean)
+    },
+    [playlists, trackMap],
+  )
+
+  const todayPlaylist = useMemo(() => resolvePlaylist(today), [resolvePlaylist, today])
+  const practicePlaylist = useMemo(
+    () => resolvePlaylist(practiceDay),
+    [resolvePlaylist, practiceDay],
+  )
+  const yesterdayCount = useMemo(
+    () => resolvePlaylist(yesterday).length,
+    [resolvePlaylist, yesterday],
+  )
 
   async function handleImport(files) {
     const audioFiles = [...files].filter((f) => f.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg|aac|flac)$/i.test(f.name))
@@ -174,6 +211,26 @@ export default function App() {
     await refreshPlaylists()
   }
 
+  async function handleCopyPlaylist(fromDay, toDay) {
+    if (fromDay === toDay) return
+    const source = playlists.find((p) => p.day === fromDay) || { trackIds: [] }
+    const ids = [...(source.trackIds || [])]
+    if (!ids.length) {
+      showToast(`${fromDay} has no exercises to copy`)
+      return
+    }
+    const target = playlists.find((p) => p.day === toDay) || { trackIds: [] }
+    if ((target.trackIds || []).length) {
+      const ok = window.confirm(
+        `Replace ${toDay}'s playlist with ${fromDay}'s ${ids.length} exercise${ids.length === 1 ? '' : 's'}?`,
+      )
+      if (!ok) return
+    }
+    await setPlaylist(toDay, ids)
+    await refreshPlaylists()
+    showToast(`Copied ${fromDay} → ${toDay}`)
+  }
+
   async function handleSaveSettings(next) {
     setSettingsState(next)
     await setSetting('reminders', next)
@@ -193,6 +250,7 @@ export default function App() {
 
   function acceptPractice() {
     setReadyOpen(false)
+    setPracticeDay(todayName())
     setTab('practice')
   }
 
@@ -229,8 +287,13 @@ export default function App() {
           {/* Keep the player mounted so audio survives tab switches and lock screen. */}
           <div hidden={tab !== 'practice'}>
             <PracticePanel
-              day={today}
-              tracks={todayPlaylist}
+              day={practiceDay}
+              tracks={practicePlaylist}
+              today={today}
+              yesterday={yesterday}
+              yesterdayCount={yesterdayCount}
+              onPracticeDayChange={setPracticeDay}
+              onCopyDayToToday={(fromDay) => handleCopyPlaylist(fromDay, today)}
               onOpenSchedule={() => setTab('schedule')}
               onOpenLibrary={() => setTab('library')}
             />
@@ -249,6 +312,7 @@ export default function App() {
               playlists={playlists}
               today={today}
               onChange={handleSetPlaylist}
+              onCopyPlaylist={handleCopyPlaylist}
             />
           )}
           {tab === 'settings' && (
