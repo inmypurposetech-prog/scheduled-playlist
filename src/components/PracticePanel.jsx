@@ -7,7 +7,17 @@ import {
   setMediaSessionPositionState,
 } from '../lib/mediaSession'
 
-export default function PracticePanel({ day, tracks, onOpenSchedule, onOpenLibrary }) {
+export default function PracticePanel({
+  day,
+  tracks,
+  today,
+  yesterday,
+  yesterdayCount,
+  onPracticeDayChange,
+  onCopyDayToToday,
+  onOpenSchedule,
+  onOpenLibrary,
+}) {
   const audioRef = useRef(null)
   const indexRef = useRef(0)
   const tracksRef = useRef(tracks)
@@ -22,6 +32,8 @@ export default function PracticePanel({ day, tracks, onOpenSchedule, onOpenLibra
   const [duration, setDuration] = useState(0)
 
   const current = tracks[index] || null
+  const isToday = day === today
+  const isYesterday = day === yesterday
 
   useEffect(() => {
     tracksRef.current = tracks
@@ -210,18 +222,76 @@ export default function PracticePanel({ day, tracks, onOpenSchedule, onOpenLibra
     if (current) setMediaSessionMetadata(current)
   }, [current?.id])
 
+  const daySwitcher = (
+    <div className="practice-day-switch" role="group" aria-label="Practice day">
+      <button
+        type="button"
+        className={isToday ? 'active' : ''}
+        aria-pressed={isToday}
+        onClick={() => onPracticeDayChange(today)}
+      >
+        Today
+      </button>
+      <button
+        type="button"
+        className={isYesterday ? 'active' : ''}
+        aria-pressed={isYesterday}
+        onClick={() => onPracticeDayChange(yesterday)}
+        disabled={!yesterdayCount && !isYesterday}
+        title={
+          yesterdayCount
+            ? `Play ${yesterday}'s playlist`
+            : `${yesterday} has no exercises yet`
+        }
+      >
+        Yesterday
+      </button>
+    </div>
+  )
+
   if (!tracks.length) {
     return (
       <section className="panel">
         <div className="practice-hero">
+          {daySwitcher}
           <p className="practice-kicker">{day}</p>
-          <h2>No playlist for today yet</h2>
+          <h2>
+            {isToday ? 'No playlist for today yet' : `No playlist for ${day}`}
+          </h2>
           <p>
-            Import your lesson audio, then assign exercises to {day}. When reminder time arrives,
-            open this page and press play.
+            {isToday
+              ? `Import your lesson audio, then assign exercises to ${day} — or reuse yesterday's queue.`
+              : `${day} has no exercises assigned. Switch back to today or build this day in Schedule.`}
           </p>
           <div className="transport">
-            <button type="button" className="btn btn-primary" onClick={onOpenLibrary}>
+            {isToday && yesterdayCount > 0 && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => onPracticeDayChange(yesterday)}
+                >
+                  Play yesterday
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => onCopyDayToToday(yesterday)}
+                >
+                  Copy yesterday into today
+                </button>
+              </>
+            )}
+            {!isToday && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onPracticeDayChange(today)}
+              >
+                Back to today
+              </button>
+            )}
+            <button type="button" className="btn btn-secondary" onClick={onOpenLibrary}>
               Open library
             </button>
             <button type="button" className="btn btn-secondary" onClick={onOpenSchedule}>
@@ -233,16 +303,47 @@ export default function PracticePanel({ day, tracks, onOpenSchedule, onOpenLibra
     )
   }
 
+  const sessionLabel = isToday
+    ? 'today'
+    : isYesterday
+      ? 'yesterday'
+      : day
+
   return (
     <section className="panel">
       <div className="practice-hero">
-        <p className="practice-kicker">{day} practice</p>
+        {daySwitcher}
+        <p className="practice-kicker">
+          {day} practice
+          {isYesterday ? ' · yesterday' : ''}
+        </p>
         <h2>Your vocal session</h2>
         <p>
-          {tracks.length} exercise{tracks.length === 1 ? '' : 's'} queued for today. Play continues
-          with the screen locked and on CarPlay — use the lock screen or car controls for play,
-          pause, and skip.
+          {tracks.length} exercise{tracks.length === 1 ? '' : 's'} queued for {sessionLabel}.
+          Play continues with the screen locked and on CarPlay — use the lock screen or car
+          controls for play, pause, and skip.
         </p>
+
+        {!isToday && (
+          <div className="practice-day-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onPracticeDayChange(today)}
+            >
+              Switch to today
+            </button>
+            {isYesterday && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onCopyDayToToday(yesterday)}
+              >
+                Copy into today
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="now-playing">
           <div className="now-title">{current?.name}</div>
@@ -287,7 +388,9 @@ export default function PracticePanel({ day, tracks, onOpenSchedule, onOpenLibra
         </div>
       </div>
 
-      <h3 className="queue-heading">Today&apos;s queue</h3>
+      <h3 className="queue-heading">
+        {isToday ? "Today's queue" : isYesterday ? "Yesterday's queue" : `${day}'s queue`}
+      </h3>
       <ul className="queue">
         {tracks.map((track, i) => (
           <li key={track.id}>

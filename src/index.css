@@ -375,6 +375,14 @@ a {
   margin-bottom: 0.85rem;
 }
 
+.pane-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem 0.75rem;
+}
+
 .sort-control {
   display: inline-flex;
   align-items: center;
@@ -542,6 +550,50 @@ a {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-size: 0.8rem;
+}
+
+.practice-day-switch {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.95rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: rgba(18, 32, 28, 0.55);
+  border: 1px solid var(--line);
+}
+
+.practice-day-switch button {
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.practice-day-switch button:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.practice-day-switch button.active {
+  background: var(--accent-dim);
+  color: var(--accent-strong);
+}
+
+.practice-day-switch button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.practice-day-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: -0.35rem 0 1rem;
 }
 
 .practice-hero h2 {
@@ -855,6 +907,11 @@ a {
   .pane-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .pane-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .sort-control {

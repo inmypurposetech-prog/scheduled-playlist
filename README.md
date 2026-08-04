@@ -5,8 +5,8 @@ Schedule Cheryl Porter (or any) vocal exercise downloads into weekday playlists,
 ## What it does
 
 - **Library** — Import local audio files (MP3, M4A, WAV, …). Files stay in your browser via IndexedDB; nothing is uploaded.
-- **Schedule** — Build Monday–Sunday playlists by mixing exercises from different lessons.
-- **Today** — Play the current day’s queue with previous / play / next and a track list.
+- **Schedule** — Build Monday–Sunday playlists by mixing exercises from different lessons. Copy any day’s playlist into today (or into another weekday).
+- **Today** — Play the current day’s queue with previous / play / next and a track list. Switch to **Yesterday** to play that weekday’s queue without changing today’s schedule, or copy yesterday into today when today’s list is empty.
 - **Reminders** — Set a daily time. While the app tab is open, you get an in-app ready prompt (and a browser notification if allowed). Yes opens Today; No dismisses for now.
 
 ## Run locally
@@ -54,10 +54,10 @@ New versions also check for updates when you return to the tab.
 ## Suggested flow
 
 1. Import your downloaded lesson exercises in **Library** (rename / assign lesson labels if you like).
-2. In **Schedule**, add tracks to each weekday. Drag the ⋮⋮ handle to reorder, use **Sort by** to order a whole day at once, or keep the ↑↓ buttons for small tweaks.
+2. In **Schedule**, add tracks to each weekday. Drag the ⋮⋮ handle to reorder, use **Sort by** to order a whole day at once, or keep the ↑↓ buttons for small tweaks. Use **Copy to today** or **Copy from** to reuse a whole day’s playlist.
 3. In **Reminders**, pick a time, allow notifications, and save.
 4. Keep the tab open (or install as a PWA from the browser) so the reminder can fire.
-5. When prompted, choose **Yes, I'm ready** and press Play.
+5. When prompted, choose **Yes, I'm ready** and press Play. On the Today tab you can also switch to **Yesterday** to rehearse that queue, or copy it into today.
 
 ## Privacy
 

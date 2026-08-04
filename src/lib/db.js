@@ -103,6 +103,12 @@ export function todayName(date = new Date()) {
   return DAYS[(date.getDay() + 6) % 7]
 }
 
+/** Previous weekday name (calendar yesterday → Mon–Sun template). */
+export function yesterdayName(date = new Date()) {
+  const idx = (date.getDay() + 6) % 7
+  return DAYS[(idx + 6) % 7]
+}
+
 export function formatDuration(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
   const m = Math.floor(seconds / 60)
