@@ -3,7 +3,6 @@ import {
   DAYS,
   addTrack,
   deleteTrack,
-  formatDuration,
   getAllPlaylists,
   getSetting,
   listTracks,
@@ -13,6 +12,13 @@ import {
   updateTrack,
   yesterdayName,
 } from './lib/db'
+import {
+  buildBackupPayload,
+  downloadBackupJson,
+  formatBytes,
+  readBackupFile,
+  restoreBackup,
+} from './lib/backup'
 import {
   ensureNotificationPermission,
   notificationSupported,
@@ -29,7 +35,7 @@ const TABS = [
   { id: 'practice', label: 'Today' },
   { id: 'library', label: 'Library' },
   { id: 'schedule', label: 'Schedule' },
-  { id: 'settings', label: 'Reminders' },
+  { id: 'settings', label: 'Settings' },
 ]
 
 const DEFAULT_SETTINGS = {
@@ -48,6 +54,7 @@ export default function App() {
   const [readyOpen, setReadyOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [backupBusy, setBackupBusy] = useState(false)
   /** Weekday currently loaded in the practice player (defaults to calendar today). */
   const [practiceDay, setPracticeDay] = useState(() => todayName())
   const objectUrls = useRef(new Map())
@@ -248,6 +255,63 @@ export default function App() {
     }
   }
 
+  async function handleExportBackup() {
+    if (backupBusy) return
+    setBackupBusy(true)
+    try {
+      const payload = await buildBackupPayload()
+      if (!payload.tracks.length) {
+        showToast('Nothing to export yet')
+        return
+      }
+      const { byteLength } = downloadBackupJson(payload)
+      showToast(`Exported ${payload.tracks.length} tracks (${formatBytes(byteLength)})`)
+    } catch (err) {
+      console.error(err)
+      showToast('Export failed — try again with fewer tracks')
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+
+  async function handleImportBackup(file) {
+    if (backupBusy) return
+    setBackupBusy(true)
+    try {
+      const parsed = await readBackupFile(file)
+      if (!parsed.ok) {
+        showToast(parsed.error)
+        return
+      }
+      const { backup } = parsed
+      const when = backup.exportedAt
+        ? new Date(backup.exportedAt).toLocaleString()
+        : 'unknown date'
+      const ok = window.confirm(
+        `Replace everything in this browser with the backup from ${when}?\n\n` +
+          `${backup.tracks.length} track${backup.tracks.length === 1 ? '' : 's'} will be restored. ` +
+          'Your current library and playlists will be overwritten.',
+      )
+      if (!ok) return
+
+      const result = await restoreBackup(backup)
+      const saved = await getSetting('reminders', DEFAULT_SETTINGS)
+      setSettingsState({ ...DEFAULT_SETTINGS, ...saved })
+      await hydrateTracks()
+      await refreshPlaylists()
+      setPracticeDay(todayName())
+      showToast(
+        `Restored ${result.trackCount} track${result.trackCount === 1 ? '' : 's'} ` +
+          `across ${result.playlistDays} day${result.playlistDays === 1 ? '' : 's'}`,
+      )
+    } catch (err) {
+      console.error(err)
+      showToast('Restore failed — file may be damaged')
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+
   function acceptPractice() {
     setReadyOpen(false)
     setPracticeDay(todayName())
@@ -319,7 +383,11 @@ export default function App() {
             <SettingsPanel
               settings={settings}
               notificationSupported={notificationSupported()}
+              trackCount={tracks.length}
+              backupBusy={backupBusy}
               onSave={handleSaveSettings}
+              onExportBackup={handleExportBackup}
+              onImportBackup={handleImportBackup}
               onTest={() => {
                 setReadyOpen(true)
                 showReadyPromptNotification({
