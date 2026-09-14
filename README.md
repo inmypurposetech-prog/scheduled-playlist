@@ -55,10 +55,19 @@ New versions also check for updates when you return to the tab.
 
 1. Import your downloaded lesson exercises in **Library** (rename / assign lesson labels if you like).
 2. In **Schedule**, add tracks to each weekday. Drag the ⋮⋮ handle to reorder, use **Sort by** to order a whole day at once, or keep the ↑↓ buttons for small tweaks. Use **Copy to today** or **Copy from** to reuse a whole day’s playlist.
-3. In **Reminders**, pick a time, allow notifications, and save.
+3. In **Settings**, pick a reminder time, allow notifications, and save. Optionally **Export backup** so you can restore later.
 4. Keep the tab open (or install as a PWA from the browser) so the reminder can fire.
 5. When prompted, choose **Yes, I'm ready** and press Play. On the Today tab you can also switch to **Yesterday** to rehearse that queue, or copy it into today.
 
 ## Privacy
 
-Audio and playlists are stored only in this browser profile on your device. Clearing site data removes them.
+Audio and playlists are stored only in this browser profile on your device. Clearing site data removes them — use **Settings → Export backup** first if you want a recoverable copy.
+
+## Backup & restore
+
+1. Open **Settings**
+2. Tap **Export backup** to download a `.json` file with your audio, weekday playlists, and reminder settings
+3. Keep that file somewhere safe (Files / iCloud Drive / email)
+4. On a new device (or after clearing site data), open Practice Day → **Settings → Restore backup** and choose the file
+
+Restore **replaces** everything currently in that browser. Files still never leave your devices unless you choose to save or share the backup yourself.

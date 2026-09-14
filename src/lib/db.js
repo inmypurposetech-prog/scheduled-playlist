@@ -89,6 +89,44 @@ export async function setSetting(key, value) {
   await db.put('settings', { key, value })
 }
 
+/**
+ * Wipe tracks + playlists and write a full library snapshot.
+ * Reminder settings are replaced when `reminders` is non-null; otherwise left alone.
+ */
+export async function replaceLibraryData({ tracks, playlists, reminders = null }) {
+  const db = await getDb()
+  const tx = db.transaction(['tracks', 'playlists', 'settings'], 'readwrite')
+  await tx.objectStore('tracks').clear()
+  await tx.objectStore('playlists').clear()
+
+  for (const track of tracks) {
+    await tx.objectStore('tracks').put({
+      id: track.id,
+      name: track.name,
+      lesson: track.lesson || 'Uncategorized',
+      blob: track.blob,
+      mimeType: track.mimeType || track.blob?.type || 'audio/mpeg',
+      createdAt: track.createdAt || Date.now(),
+    })
+  }
+
+  const byDay = Object.fromEntries(
+    (playlists || []).map((p) => [p.day, p.trackIds || []]),
+  )
+  for (const day of DAYS) {
+    await tx.objectStore('playlists').put({
+      day,
+      trackIds: byDay[day] || [],
+    })
+  }
+
+  if (reminders != null) {
+    await tx.objectStore('settings').put({ key: 'reminders', value: reminders })
+  }
+
+  await tx.done
+}
+
 export const DAYS = [
   'Monday',
   'Tuesday',

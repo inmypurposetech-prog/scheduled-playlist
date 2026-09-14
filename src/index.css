@@ -711,6 +711,39 @@ a {
   max-width: 520px;
 }
 
+.settings-stack {
+  display: grid;
+  gap: 2rem;
+  max-width: 560px;
+}
+
+.settings-block h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.settings-block-copy {
+  margin: 0 0 1.15rem;
+  color: var(--ink-muted);
+  font-size: 0.98rem;
+}
+
+.backup-meta {
+  margin-bottom: 0.9rem;
+  color: var(--sage-strong);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.backup-hint {
+  margin: 0.9rem 0 0;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .field {
   display: grid;
   gap: 0.5rem;
