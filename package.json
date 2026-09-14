@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:backup": "node scripts/test-backup-format.mjs"
+    "test:backup": "node scripts/test-backup-format.mjs && node scripts/test-backup-idb.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
