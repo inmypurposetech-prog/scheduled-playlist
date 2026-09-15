@@ -1,6 +1,6 @@
 # Practice Day
 
-Schedule Cheryl Porter (or any) vocal exercise downloads into weekday playlists, open today’s queue in one tap, and get a gentle “Are you ready for your vocal practice?” prompt.
+Schedule any vocal exercise downloads into weekday playlists, open today’s queue in one tap, and get a gentle “Are you ready for your vocal practice?” prompt.
 
 ## What it does
 
