@@ -42,8 +42,8 @@ export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
         <div>
           <h2>Lesson library</h2>
           <p>
-            Import the Cheryl Porter exercise audio you already downloaded. Files stay on this
-            device — nothing is uploaded to a server.
+            Import the exercise audio you want to practice with. Files stay on this device — nothing
+            is uploaded to a server.
           </p>
         </div>
         {tracks.length > 0 && (
