@@ -325,7 +325,7 @@ export default function PracticePanel({
       ? 'yesterday'
       : day
   const playlistLengthLabel =
-    playlistDuration > 0 ? ` · ${formatDuration(playlistDuration)} total` : ''
+    playlistDuration > 0 ? ` (${formatDuration(playlistDuration)} total)` : ''
 
   return (
     <section className="panel">
