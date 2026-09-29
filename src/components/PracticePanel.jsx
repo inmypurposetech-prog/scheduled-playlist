@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { sumTrackDurations } from '../lib/audioDuration'
 import { formatDuration } from '../lib/db'
 import {
   bindMediaSessionActions,
@@ -30,6 +31,7 @@ export default function PracticePanel({
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [playlistDuration, setPlaylistDuration] = useState(0)
 
   const current = tracks[index] || null
   const isToday = day === today
@@ -37,6 +39,20 @@ export default function PracticePanel({
 
   useEffect(() => {
     tracksRef.current = tracks
+  }, [tracks])
+
+  useEffect(() => {
+    let cancelled = false
+    setPlaylistDuration(0)
+    if (!tracks.length) return undefined
+
+    sumTrackDurations(tracks).then((total) => {
+      if (!cancelled) setPlaylistDuration(total)
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [tracks])
 
   useEffect(() => {
@@ -308,6 +324,8 @@ export default function PracticePanel({
     : isYesterday
       ? 'yesterday'
       : day
+  const playlistLengthLabel =
+    playlistDuration > 0 ? ` (${formatDuration(playlistDuration)} total)` : ''
 
   return (
     <section className="panel">
@@ -319,9 +337,10 @@ export default function PracticePanel({
         </p>
         <h2>Your vocal session</h2>
         <p>
-          {tracks.length} exercise{tracks.length === 1 ? '' : 's'} queued for {sessionLabel}.
-          Play continues with the screen locked and on CarPlay — use the lock screen or car
-          controls for play, pause, and skip.
+          {tracks.length} exercise{tracks.length === 1 ? '' : 's'}
+          {playlistLengthLabel} queued for {sessionLabel}. Play continues with the screen
+          locked and on CarPlay — use the lock screen or car controls for play, pause, and
+          skip.
         </p>
 
         {!isToday && (
@@ -390,6 +409,7 @@ export default function PracticePanel({
 
       <h3 className="queue-heading">
         {isToday ? "Today's queue" : isYesterday ? "Yesterday's queue" : `${day}'s queue`}
+        {playlistLengthLabel}
       </h3>
       <ul className="queue">
         {tracks.map((track, i) => (
