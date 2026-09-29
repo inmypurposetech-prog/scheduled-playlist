@@ -29,9 +29,20 @@ export function readAudioDuration(url) {
   })
 }
 
+/** Map track id → duration (seconds) for tracks that expose a playable `url`. */
+export async function mapTrackDurations(tracks) {
+  if (!tracks?.length) return new Map()
+  const parts = await Promise.all(
+    tracks.map(async (track) => [track.id, await readAudioDuration(track.url)]),
+  )
+  return new Map(parts.filter(([, seconds]) => seconds > 0))
+}
+
 /** Sum durations for tracks that expose a playable `url`. */
 export async function sumTrackDurations(tracks) {
   if (!tracks?.length) return 0
-  const parts = await Promise.all(tracks.map((track) => readAudioDuration(track.url)))
-  return parts.reduce((sum, seconds) => sum + seconds, 0)
+  const byId = await mapTrackDurations(tracks)
+  let total = 0
+  for (const seconds of byId.values()) total += seconds
+  return total
 }

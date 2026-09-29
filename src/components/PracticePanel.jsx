@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { sumTrackDurations } from '../lib/audioDuration'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { mapTrackDurations } from '../lib/audioDuration'
 import { formatDuration } from '../lib/db'
 import {
   bindMediaSessionActions,
@@ -7,6 +7,7 @@ import {
   setMediaSessionPlaybackState,
   setMediaSessionPositionState,
 } from '../lib/mediaSession'
+import { computeSessionProgress, queueItemStatus } from '../lib/sessionProgress'
 
 export default function PracticePanel({
   day,
@@ -31,7 +32,7 @@ export default function PracticePanel({
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [playlistDuration, setPlaylistDuration] = useState(0)
+  const [durationById, setDurationById] = useState(() => new Map())
 
   const current = tracks[index] || null
   const isToday = day === today
@@ -43,17 +44,32 @@ export default function PracticePanel({
 
   useEffect(() => {
     let cancelled = false
-    setPlaylistDuration(0)
+    setDurationById(new Map())
     if (!tracks.length) return undefined
 
-    sumTrackDurations(tracks).then((total) => {
-      if (!cancelled) setPlaylistDuration(total)
+    mapTrackDurations(tracks).then((byId) => {
+      if (!cancelled) setDurationById(byId)
     })
 
     return () => {
       cancelled = true
     }
   }, [tracks])
+
+  const sessionProgress = useMemo(
+    () =>
+      computeSessionProgress({
+        index,
+        trackCount: tracks.length,
+        currentTime,
+        currentDuration: duration,
+        durationById,
+        tracks,
+      }),
+    [index, tracks, currentTime, duration, durationById],
+  )
+
+  const playlistDuration = sessionProgress.totalSeconds
 
   useEffect(() => {
     indexRef.current = 0
@@ -365,6 +381,38 @@ export default function PracticePanel({
         )}
 
         <div className="now-playing">
+          <div
+            className="session-progress"
+            role="status"
+            aria-live="polite"
+            aria-label={sessionProgress.label}
+          >
+            <div className="session-progress-label">{sessionProgress.label}</div>
+            <div
+              className="session-progress-track"
+              aria-hidden="true"
+            >
+              <div
+                className="session-progress-fill"
+                style={{ width: `${Math.round(sessionProgress.fraction * 100)}%` }}
+              />
+            </div>
+            <div className="session-progress-meta">
+              <span>
+                {sessionProgress.allDurationsKnown
+                  ? `${formatDuration(sessionProgress.elapsedSeconds)} played`
+                  : `Exercise ${sessionProgress.exerciseNumber} of ${sessionProgress.trackCount}`}
+              </span>
+              <span>
+                {sessionProgress.allDurationsKnown
+                  ? `${formatDuration(sessionProgress.remainingSeconds)} remaining`
+                  : sessionProgress.remainingExercises === 0
+                    ? 'Last exercise'
+                    : `${sessionProgress.remainingExercises} left after this`}
+              </span>
+            </div>
+          </div>
+
           <div className="now-title">{current?.name}</div>
           <small style={{ color: 'var(--ink-muted)' }}>{current?.lesson}</small>
 
@@ -385,7 +433,7 @@ export default function PracticePanel({
                 currentTimeRef.current = value
                 setCurrentTime(value)
               }}
-              aria-label="Seek"
+              aria-label="Seek within track"
             />
             <div className="time-row">
               <span>{formatDuration(currentTime)}</span>
@@ -412,24 +460,27 @@ export default function PracticePanel({
         {playlistLengthLabel}
       </h3>
       <ul className="queue">
-        {tracks.map((track, i) => (
-          <li key={track.id}>
-            <button
-              type="button"
-              className={`queue-item${i === index ? ' active' : ''}`}
-              onClick={() => playAt(i)}
-            >
-              <span className="order">{i + 1}</span>
-              <div className="track-meta">
-                <strong>{track.name}</strong>
-                <small>{track.lesson}</small>
-              </div>
-              <span style={{ color: 'var(--ink-faint)', fontSize: '0.85rem' }}>
-                {i === index && playing ? 'Playing' : 'Play'}
-              </span>
-            </button>
-          </li>
-        ))}
+        {tracks.map((track, i) => {
+          const status = queueItemStatus(i, index, playing)
+          return (
+            <li key={track.id}>
+              <button
+                type="button"
+                className={`queue-item${i === index ? ' active' : ''}${i < index ? ' done' : ''}`}
+                onClick={() => playAt(i)}
+              >
+                <span className="order">{i + 1}</span>
+                <div className="track-meta">
+                  <strong>{track.name}</strong>
+                  <small>{track.lesson}</small>
+                </div>
+                <span className={`queue-status queue-status-${status.toLowerCase().replace(/\s+/g, '-')}`}>
+                  {status}
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
 
       <audio
@@ -450,7 +501,17 @@ export default function PracticePanel({
         }}
         onLoadedMetadata={() => {
           const audio = audioRef.current
-          setDuration(audio?.duration || 0)
+          const nextDuration = audio?.duration || 0
+          setDuration(nextDuration)
+          const track = tracksRef.current[indexRef.current]
+          if (track && nextDuration > 0) {
+            setDurationById((prev) => {
+              if (prev.get(track.id) === nextDuration) return prev
+              const next = new Map(prev)
+              next.set(track.id, nextDuration)
+              return next
+            })
+          }
           if (audio) setMediaSessionPositionState(audio)
         }}
         onPlay={() => {
