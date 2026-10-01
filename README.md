@@ -6,7 +6,7 @@ Schedule any vocal exercise downloads into weekday playlists, open today’s que
 
 - **Library** — Import local audio files (MP3, M4A, WAV, …). Files stay in your browser via IndexedDB; nothing is uploaded.
 - **Schedule** — Build Monday–Sunday playlists by mixing exercises from different lessons. Copy any day’s playlist into today (or into another weekday).
-- **Today** — Play the current day’s queue with previous / play / next and a track list. Switch to **Yesterday** to play that weekday’s queue without changing today’s schedule, or copy yesterday into today when today’s list is empty.
+- **Today** — Play the current day’s queue with previous / play / next and a track list. See **Exercise N of M** plus time remaining so you can stop mid-session without losing your place. Switch to **Yesterday** to play that weekday’s queue without changing today’s schedule, or copy yesterday into today when today’s list is empty.
 - **Reminders** — Set a daily time. While the app tab is open, you get an in-app ready prompt (and a browser notification if allowed). Yes opens Today; No dismisses for now.
 
 ## Run locally
