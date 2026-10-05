@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:backup": "node scripts/test-backup-format.mjs",
+    "test:lesson": "node scripts/test-lesson-label.mjs",
+    "test:insights": "node scripts/test-practice-insights.mjs",
     "test:session": "node scripts/test-session-progress.mjs"
   },
   "dependencies": {

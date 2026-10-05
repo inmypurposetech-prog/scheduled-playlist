@@ -1,7 +1,11 @@
 import { openDB } from 'idb'
+import { lessonForStorage } from './lessonLabel'
+import { clampPlaybackRate } from './playbackRate'
 
 const DB_NAME = 'practice-day'
-const DB_VERSION = 1
+// Version 3 creates the practice-log store. A version 2 database can exist
+// without that store if an earlier upgrade ran before the store was added.
+const DB_VERSION = 3
 
 export async function getDb() {
   return openDB(DB_NAME, DB_VERSION, {
@@ -19,6 +23,9 @@ export async function getDb() {
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' })
       }
+      if (!db.objectStoreNames.contains('logs')) {
+        db.createObjectStore('logs', { keyPath: 'date' })
+      }
     },
   })
 }
@@ -32,7 +39,7 @@ export async function addTrack({ name, lesson, blob, mimeType }) {
   const db = await getDb()
   const id = await db.add('tracks', {
     name,
-    lesson: lesson || 'Uncategorized',
+    lesson: lessonForStorage(lesson),
     blob,
     mimeType: mimeType || blob.type || 'audio/mpeg',
     createdAt: Date.now(),
@@ -103,10 +110,11 @@ export async function replaceLibraryData({ tracks, playlists, reminders = null }
     await tx.objectStore('tracks').put({
       id: track.id,
       name: track.name,
-      lesson: track.lesson || 'Uncategorized',
+      lesson: lessonForStorage(track.lesson),
       blob: track.blob,
       mimeType: track.mimeType || track.blob?.type || 'audio/mpeg',
       createdAt: track.createdAt || Date.now(),
+      ...(track.playbackRate == null ? {} : { playbackRate: clampPlaybackRate(track.playbackRate) }),
     })
   }
 
@@ -145,6 +153,42 @@ export function todayName(date = new Date()) {
 export function yesterdayName(date = new Date()) {
   const idx = (date.getDay() + 6) % 7
   return DAYS[(idx + 6) % 7]
+}
+
+export async function listPracticeLogs() {
+  const db = await getDb()
+  const rows = await db.getAll('logs')
+  return rows.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export async function savePracticeLog(log) {
+  const db = await getDb()
+  const date = typeof log?.date === 'string' ? log.date : ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error('Practice log needs a date')
+  }
+  const exercises = Array.isArray(log.exercises)
+    ? log.exercises.map((exercise) => ({
+        name: typeof exercise?.name === 'string' ? exercise.name.trim() : '',
+        trackId: typeof exercise?.trackId === 'number' ? exercise.trackId : null,
+        feeling: typeof exercise?.feeling === 'string' ? exercise.feeling : null,
+      }))
+    : []
+  const next = {
+    date,
+    time: typeof log.time === 'string' ? log.time : '',
+    goals: typeof log.goals === 'string' ? log.goals : '',
+    exercises,
+    difficult: typeof log.difficult === 'string' ? log.difficult : '',
+    stillWorkingOn: typeof log.stillWorkingOn === 'string' ? log.stillWorkingOn : '',
+    improvements: typeof log.improvements === 'string' ? log.improvements : '',
+    discovered: typeof log.discovered === 'string' ? log.discovered : '',
+    nextFocus: typeof log.nextFocus === 'string' ? log.nextFocus : '',
+    song: typeof log.song === 'string' ? log.song : '',
+    updatedAt: Date.now(),
+  }
+  await db.put('logs', next)
+  return next
 }
 
 export function formatDuration(seconds) {

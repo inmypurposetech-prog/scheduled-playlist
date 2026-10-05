@@ -13,6 +13,8 @@ import {
   formatBytes,
   parseBackup,
 } from './backupFormat'
+import { lessonForStorage } from './lessonLabel'
+import { clampPlaybackRate } from './playbackRate'
 
 export {
   BACKUP_KIND,
@@ -34,9 +36,10 @@ export async function buildBackupPayload() {
     serializedTracks.push({
       id: track.id,
       name: track.name,
-      lesson: track.lesson || 'Uncategorized',
+      lesson: lessonForStorage(track.lesson),
       mimeType: track.mimeType || track.blob?.type || 'audio/mpeg',
       createdAt: track.createdAt || Date.now(),
+      ...(track.playbackRate == null ? {} : { playbackRate: clampPlaybackRate(track.playbackRate) }),
       data: await blobToBase64(track.blob),
     })
   }
@@ -92,6 +95,7 @@ export async function restoreBackup(backup) {
     lesson: track.lesson,
     mimeType: track.mimeType,
     createdAt: track.createdAt,
+    ...(track.playbackRate == null ? {} : { playbackRate: track.playbackRate }),
     blob: base64ToBlob(track.data, track.mimeType),
   }))
 

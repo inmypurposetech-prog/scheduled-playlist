@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { UNCATEGORISED_LESSON } from './lib/lessonLabel'
 import {
   DAYS,
   addTrack,
@@ -8,6 +9,8 @@ import {
   listTracks,
   setPlaylist,
   setSetting,
+  listPracticeLogs,
+  savePracticeLog,
   todayName,
   updateTrack,
   yesterdayName,
@@ -25,7 +28,10 @@ import {
   showReadyPromptNotification,
   startReminderWatcher,
 } from './lib/notifications'
+import { clampPlaybackRate } from './lib/playbackRate'
+import { motivationLine } from './lib/practiceLog'
 import LibraryPanel from './components/LibraryPanel'
+import LogPanel from './components/LogPanel'
 import SchedulePanel from './components/SchedulePanel'
 import PracticePanel from './components/PracticePanel'
 import SettingsPanel from './components/SettingsPanel'
@@ -35,6 +41,7 @@ const TABS = [
   { id: 'practice', label: 'Today' },
   { id: 'library', label: 'Library' },
   { id: 'schedule', label: 'Schedule' },
+  { id: 'log', label: 'Log' },
   { id: 'settings', label: 'Settings' },
 ]
 
@@ -55,6 +62,7 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
   const [backupBusy, setBackupBusy] = useState(false)
+  const [logs, setLogs] = useState([])
   /** Weekday currently loaded in the practice player (defaults to calendar today). */
   const [practiceDay, setPracticeDay] = useState(() => todayName())
   const objectUrls = useRef(new Map())
@@ -84,6 +92,7 @@ export default function App() {
         lesson: track.lesson,
         mimeType: track.mimeType,
         createdAt: track.createdAt,
+        playbackRate: clampPlaybackRate(track.playbackRate),
         url,
       }
     })
@@ -99,13 +108,19 @@ export default function App() {
     let cancelled = false
     ;(async () => {
       const saved = await getSetting('reminders', DEFAULT_SETTINGS)
+      if (cancelled) return
+      setSettingsState({ ...DEFAULT_SETTINGS, ...saved })
+      await hydrateTracks()
+      await refreshPlaylists()
+      setLogs(await listPracticeLogs())
+      if (!cancelled) setLoading(false)
+    })().catch((err) => {
+      console.error(err)
       if (!cancelled) {
-        setSettingsState({ ...DEFAULT_SETTINGS, ...saved })
-        await hydrateTracks()
-        await refreshPlaylists()
         setLoading(false)
+        showToast('Could not open the practice library')
       }
-    })()
+    })
     return () => {
       cancelled = true
       revokeAllUrls()
@@ -141,6 +156,7 @@ export default function App() {
 
   const today = todayName()
   const yesterday = yesterdayName()
+  const weekNote = useMemo(() => motivationLine(logs).text, [logs])
 
   // If the calendar day rolls over while the tab stays open, follow "today"
   // when the player was still on the previous calendar day.
@@ -192,13 +208,26 @@ export default function App() {
       const lessonMatch = base.match(/^(lesson\s*\d+|l\d+|module\s*\d+)/i)
       await addTrack({
         name: base,
-        lesson: lessonMatch ? lessonMatch[0].replace(/\s+/g, ' ') : 'Uncategorized',
+        lesson: lessonMatch ? lessonMatch[0].replace(/\s+/g, ' ') : UNCATEGORISED_LESSON,
         blob: file,
         mimeType: file.type,
       })
     }
     await hydrateTracks()
     showToast(`Added ${audioFiles.length} track${audioFiles.length === 1 ? '' : 's'}`)
+  }
+
+  async function handlePlaybackRate(id, rate) {
+    const playbackRate = clampPlaybackRate(rate)
+    setTracks((prev) => prev.map((track) => (track.id === id ? { ...track, playbackRate } : track)))
+    await updateTrack(id, { playbackRate })
+  }
+
+  async function handleSaveLog(log) {
+    const saved = await savePracticeLog(log)
+    setLogs(await listPracticeLogs())
+    showToast('Practice log saved')
+    return saved
   }
 
   async function handleUpdateTrack(id, updates) {
@@ -360,6 +389,9 @@ export default function App() {
               onCopyDayToToday={(fromDay) => handleCopyPlaylist(fromDay, today)}
               onOpenSchedule={() => setTab('schedule')}
               onOpenLibrary={() => setTab('library')}
+              onOpenLog={() => setTab('log')}
+              weekNote={weekNote}
+              onPlaybackRate={handlePlaybackRate}
             />
           </div>
           {tab === 'library' && (
@@ -378,6 +410,9 @@ export default function App() {
               onChange={handleSetPlaylist}
               onCopyPlaylist={handleCopyPlaylist}
             />
+          )}
+          {tab === 'log' && (
+            <LogPanel logs={logs} todayTracks={todayPlaylist} onSave={handleSaveLog} />
           )}
           {tab === 'settings' && (
             <SettingsPanel
