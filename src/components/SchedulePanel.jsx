@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DAYS } from '../lib/db'
+import { formatLessonLabel } from '../lib/lessonLabel'
 import { SORT_OPTIONS, sortTracks } from '../lib/sortTracks'
 
 function SortablePlaylistItem({ track, index, onMove, onRemove }) {
@@ -46,7 +47,7 @@ function SortablePlaylistItem({ track, index, onMove, onRemove }) {
       <span className="order">{index + 1}</span>
       <div className="track-meta">
         <strong>{track.name}</strong>
-        <small>{track.lesson}</small>
+        <small>{formatLessonLabel(track.lesson)}</small>
       </div>
       <div className="track-actions">
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => onMove(track.id, -1)} aria-label="Move up">
@@ -283,7 +284,7 @@ export default function SchedulePanel({ tracks, playlists, today, onChange, onCo
                 <span>
                   <strong>{track.name}</strong>
                   <br />
-                  <small style={{ color: 'var(--ink-faint)' }}>{track.lesson}</small>
+                  <small style={{ color: 'var(--ink-faint)' }}>{formatLessonLabel(track.lesson)}</small>
                 </span>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => addTrack(track.id)}>
                   Add

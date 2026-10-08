@@ -1,3 +1,5 @@
+import { formatLessonLabel } from './lessonLabel'
+
 /** Media Session helpers so iOS keeps audio alive on lock screen / CarPlay. */
 
 export function mediaSessionSupported() {
@@ -9,7 +11,7 @@ export function setMediaSessionMetadata(track) {
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.name || 'Vocal exercise',
-      artist: track.lesson || 'Practice Day',
+      artist: formatLessonLabel(track.lesson),
       album: 'Practice Day',
     })
   } catch {

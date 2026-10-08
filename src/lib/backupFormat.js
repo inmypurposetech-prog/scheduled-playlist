@@ -1,3 +1,6 @@
+import { lessonForStorage } from './lessonLabel.js'
+import { clampPlaybackRate } from './playbackRate.js'
+
 export const BACKUP_KIND = 'practice-day-backup'
 export const BACKUP_VERSION = 1
 
@@ -100,10 +103,7 @@ export function parseBackup(raw) {
       tracks: raw.tracks.map((track) => ({
         id: track.id,
         name: track.name.trim(),
-        lesson:
-          typeof track.lesson === 'string' && track.lesson.trim()
-            ? track.lesson.trim()
-            : 'Uncategorized',
+        lesson: lessonForStorage(track.lesson),
         mimeType:
           typeof track.mimeType === 'string' && track.mimeType
             ? track.mimeType
@@ -112,6 +112,9 @@ export function parseBackup(raw) {
           typeof track.createdAt === 'number' && Number.isFinite(track.createdAt)
             ? track.createdAt
             : Date.now(),
+        ...(typeof track.playbackRate === 'number' && Number.isFinite(track.playbackRate)
+          ? { playbackRate: clampPlaybackRate(track.playbackRate) }
+          : {}),
         data: track.data,
       })),
       playlists,

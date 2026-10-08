@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { mapTrackDurations } from '../lib/audioDuration'
 import { formatDuration } from '../lib/db'
+import { formatLessonLabel } from '../lib/lessonLabel'
+import {
+  MAX_PLAYBACK_RATE,
+  MIN_PLAYBACK_RATE,
+  PLAYBACK_RATE_PRESETS,
+  PLAYBACK_RATE_STEP,
+  clampPlaybackRate,
+  formatPlaybackRate,
+  samePlaybackRate,
+} from '../lib/playbackRate'
 import {
   bindMediaSessionActions,
   setMediaSessionMetadata,
@@ -19,6 +29,9 @@ export default function PracticePanel({
   onCopyDayToToday,
   onOpenSchedule,
   onOpenLibrary,
+  onOpenLog,
+  weekNote,
+  onPlaybackRate,
 }) {
   const audioRef = useRef(null)
   const indexRef = useRef(0)
@@ -71,6 +84,8 @@ export default function PracticePanel({
 
   const playlistDuration = sessionProgress.totalSeconds
 
+  const queueKey = tracks.map((track) => track.id).join('|')
+
   useEffect(() => {
     indexRef.current = 0
     playingRef.current = false
@@ -87,7 +102,14 @@ export default function PracticePanel({
       audio.load()
     }
     setMediaSessionPlaybackState(false)
-  }, [day, tracks])
+  }, [day, queueKey])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    const track = tracks[index]
+    if (!audio || !track) return
+    audio.playbackRate = clampPlaybackRate(track.playbackRate)
+  }, [tracks, index])
 
   function syncPlaying(next) {
     playingRef.current = next
@@ -113,6 +135,7 @@ export default function PracticePanel({
     }
 
     setMediaSessionMetadata(track)
+    audio.playbackRate = clampPlaybackRate(track.playbackRate)
     currentTimeRef.current = 0
     setCurrentTime(0)
 
@@ -173,6 +196,7 @@ export default function PracticePanel({
       audio.load()
       setMediaSessionMetadata(track)
     }
+    if (track) audio.playbackRate = clampPlaybackRate(track.playbackRate)
     syncPlaying(true)
     audio.play().catch(() => syncPlaying(false))
   }
@@ -254,6 +278,24 @@ export default function PracticePanel({
     if (current) setMediaSessionMetadata(current)
   }, [current?.id])
 
+  function changeRate(rate) {
+    const track = tracksRef.current[indexRef.current]
+    const audio = audioRef.current
+    if (!track) return
+    const next = clampPlaybackRate(rate)
+    if (audio) {
+      audio.playbackRate = next
+      setMediaSessionPositionState(audio)
+    }
+    onPlaybackRate?.(track.id, next)
+  }
+
+  const motivation = weekNote ? (
+    <p className="motivation" role="status">
+      {weekNote}
+    </p>
+  ) : null
+
   const daySwitcher = (
     <div className="practice-day-switch" role="group" aria-label="Practice day">
       <button
@@ -285,6 +327,7 @@ export default function PracticePanel({
     return (
       <section className="panel">
         <div className="practice-hero">
+          {motivation}
           {daySwitcher}
           <p className="practice-kicker">{day}</p>
           <h2>
@@ -329,6 +372,11 @@ export default function PracticePanel({
             <button type="button" className="btn btn-secondary" onClick={onOpenSchedule}>
               Build schedule
             </button>
+            {onOpenLog && (
+              <button type="button" className="btn btn-secondary" onClick={onOpenLog}>
+                Practice log
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -346,6 +394,7 @@ export default function PracticePanel({
   return (
     <section className="panel">
       <div className="practice-hero">
+        {motivation}
         {daySwitcher}
         <p className="practice-kicker">
           {day} practice
@@ -414,7 +463,9 @@ export default function PracticePanel({
           </div>
 
           <div className="now-title">{current?.name}</div>
-          <small style={{ color: 'var(--ink-muted)' }}>{current?.lesson}</small>
+          <small style={{ color: 'var(--ink-muted)' }}>
+            {current ? formatLessonLabel(current.lesson) : ''}
+          </small>
 
           <div className="progress-wrap">
             <input
@@ -441,6 +492,38 @@ export default function PracticePanel({
             </div>
           </div>
 
+          {current && (
+            <div className="speed-control">
+              <div className="speed-label">
+                <span>Speed</span>
+                <strong>{formatPlaybackRate(current.playbackRate)}</strong>
+              </div>
+              <input
+                className="progress-bar"
+                type="range"
+                min={MIN_PLAYBACK_RATE}
+                max={MAX_PLAYBACK_RATE}
+                step={PLAYBACK_RATE_STEP}
+                value={clampPlaybackRate(current.playbackRate)}
+                aria-label="Playback speed"
+                onChange={(event) => changeRate(event.target.value)}
+              />
+              <div className="speed-presets" role="group" aria-label="Playback speed presets">
+                {PLAYBACK_RATE_PRESETS.map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    className={samePlaybackRate(current.playbackRate, rate) ? 'active' : ''}
+                    aria-pressed={samePlaybackRate(current.playbackRate, rate)}
+                    onClick={() => changeRate(rate)}
+                  >
+                    {formatPlaybackRate(rate)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="transport">
             <button type="button" className="btn btn-secondary" onClick={playPrev}>
               Previous
@@ -451,6 +534,11 @@ export default function PracticePanel({
             <button type="button" className="btn btn-secondary" onClick={playNext}>
               Next
             </button>
+            {onOpenLog && (
+              <button type="button" className="btn btn-secondary" onClick={onOpenLog}>
+                Practice log
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -472,7 +560,7 @@ export default function PracticePanel({
                 <span className="order">{i + 1}</span>
                 <div className="track-meta">
                   <strong>{track.name}</strong>
-                  <small>{track.lesson}</small>
+                  <small>{formatLessonLabel(track.lesson)}</small>
                 </div>
                 <span className={`queue-status queue-status-${status.toLowerCase().replace(/\s+/g, '-')}`}>
                   {status}
@@ -512,6 +600,7 @@ export default function PracticePanel({
               return next
             })
           }
+          if (audio && track) audio.playbackRate = clampPlaybackRate(track.playbackRate)
           if (audio) setMediaSessionPositionState(audio)
         }}
         onPlay={() => {

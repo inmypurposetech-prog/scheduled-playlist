@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { formatLessonLabel, lessonForStorage, lessonGroupKey } from '../lib/lessonLabel'
 import { SORT_OPTIONS, sortTracks } from '../lib/sortTracks'
 
 export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
@@ -13,7 +14,7 @@ export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
     if (sortBy.startsWith('lesson')) {
       const map = new Map()
       for (const track of sorted) {
-        const key = track.lesson || 'Uncategorized'
+        const key = lessonGroupKey(track.lesson)
         if (!map.has(key)) map.set(key, [])
         map.get(key).push(track)
       }
@@ -31,7 +32,7 @@ export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
   async function saveEdit(id) {
     await onUpdate(id, {
       name: draft.name.trim() || 'Untitled',
-      lesson: draft.lesson.trim() || 'Uncategorized',
+      lesson: lessonForStorage(draft.lesson),
     })
     setEditingId(null)
   }
@@ -101,7 +102,7 @@ export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
         <div className="lesson-groups">
           {groups.map(([lesson, items]) => (
             <div key={lesson} className="lesson-block">
-              <h3>{lesson}</h3>
+              <h3>{sortBy.startsWith('lesson') ? formatLessonLabel(lesson) : lesson}</h3>
               <ul className="track-list">
                 {items.map((track) => (
                   <li key={track.id} className="track-row">
@@ -135,7 +136,7 @@ export default function LibraryPanel({ tracks, onImport, onUpdate, onDelete }) {
                       ) : (
                         <>
                           <strong>{track.name}</strong>
-                          <small>{track.lesson}</small>
+                          <small>{formatLessonLabel(track.lesson)}</small>
                         </>
                       )}
                     </div>

@@ -81,7 +81,7 @@ assert.equal(typeof atob, 'function')
   const parsed = parseBackup(raw)
   assert.equal(parsed.ok, true)
   assert.equal(parsed.backup.tracks[0].name, 'Warmup')
-  assert.equal(parsed.backup.tracks[0].lesson, 'Uncategorized')
+  assert.equal(parsed.backup.tracks[0].lesson, 'Uncategorised')
   assert.equal(parsed.backup.playlists.find((p) => p.day === 'Monday').trackIds.length, 2)
   assert.deepEqual(
     parsed.backup.playlists.find((p) => p.day === 'Monday').trackIds,
@@ -93,6 +93,40 @@ assert.equal(typeof atob, 'function')
   )
   assert.equal(parsed.backup.settings.reminders.time, '08:30')
   pass('normalizes valid backup')
+}
+
+{
+  const raw = {
+    kind: BACKUP_KIND,
+    version: BACKUP_VERSION,
+    tracks: [
+      {
+        id: 1,
+        name: 'Scale',
+        lesson: 'Lesson 1',
+        data: arrayBufferToBase64(new Uint8Array([1]).buffer),
+      },
+      {
+        id: 2,
+        name: 'Legacy',
+        lesson: 'Uncategorized',
+        data: arrayBufferToBase64(new Uint8Array([2]).buffer),
+      },
+      {
+        id: 3,
+        name: 'Prefixed',
+        lesson: 'Lesson: Already labelled',
+        data: arrayBufferToBase64(new Uint8Array([3]).buffer),
+      },
+    ],
+    playlists: [],
+  }
+  const parsed = parseBackup(raw)
+  assert.equal(parsed.ok, true)
+  assert.equal(parsed.backup.tracks[0].lesson, 'Lesson 1')
+  assert.equal(parsed.backup.tracks[1].lesson, 'Uncategorized')
+  assert.equal(parsed.backup.tracks[2].lesson, 'Lesson: Already labelled')
+  pass('keeps stored lesson names and does not prefix them')
 }
 
 {
